@@ -1,0 +1,58 @@
+@mixin transition($property, $duration, $timing-function: ease-out, $delay: 0s) {
+  -webkit-transition: $property $duration $timing-function $delay;
+  transition: $property $duration $timing-function $delay;
+}
+
+@mixin text($size, $color, $weight: normal, $letter-spacing: normal) {
+  font-size: $size;
+  font-weight: $weight;
+  color: $color;
+  letter-spacing: $letter-spacing;
+}
+
+@mixin singleLineEllipsis() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin hideText() {
+  font-size: 0;
+  overflow: hidden;
+  text-indent: -9999px;
+}
+
+@mixin clearFix() {
+  &:after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+}
+
+@mixin FullSizeCoverBg($imgUrl) {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  background-image: url($imgUrl);
+}
+
+@mixin responsive($width-type) {
+  // $responsive-width-tablet: 769px;
+  // $responsive-width-desktop: 993px;
+  // $responsive-width-extra: 1201px;
+
+  @if $width-type == extra {
+    @media screen and (min-width: $responsive-width-extra) {
+      @content;
+    }
+  } @else if $width-type == desktop {
+    @media screen and (min-width: $responsive-width-desktop) {
+      @content;
+    }
+  } @else if $width-type == tablet {
+    @media screen and (min-width: $responsive-width-tablet) {
+      @content;
+    }
+  }
+}
