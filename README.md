@@ -8,13 +8,13 @@
 
 ## NPM tasks
 * $npm run start:dev  
-after run, connect http://localhost:9001/
+after run, connect http://localhost:9001/card-ui.html, http://localhost:9001/input-form.html
 
 * $npm run build:dev  
-build development js file (has console.log, comments)
+build development files to /dist
 
 * $npm run build:prod  
-build production js file (uglified. no console.log, comments, unused modules.)
+build production files to /dist
 
 
 ## Contact
