@@ -1,69 +1,167 @@
 const path = require('path');
-const webpack = require('webpack');
-const merge = require('webpack-merge');
-const common = require('./webpack.common');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserWebpackPlugin = require('terser-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-module.exports = merge(common, {
-  devtool: 'source-map',
+module.exports = {
+  mode: 'production',
 
-  mode: 'production', // 'development' or 'production'. $webpack --mode=production
-
-  plugins: [
-    // https://webpack.js.org/guides/output-management/#cleaning-up-the-dist-folder
-    new CleanWebpackPlugin(['build']),
-
-    // https://webpack.js.org/plugins/define-plugin/
-    new webpack.DefinePlugin({
-      // global constants in production mode
-    })
-
-    // https://webpack.js.org/plugins/banner-plugin/
-    // TODO: https://github.com/webpack/webpack/issues/6630
-    // new webpack.BannerPlugin({ banner: 'hello world' })
-  ],
-
-  optimization: {
-    minimize: true,
-    minimizer: [
-      new UglifyJsPlugin({
-        extractComments: false,
-        parallel: true,
-        sourceMap: true,
-        uglifyOptions: {
-          warnings: false,
-          compress: {
-            unused: true,
-            drop_console: true,
-            warnings: true
-          },
-          mangle: true,
-          output: {
-            beautify: false,
-            comments: false
-          },
-          keep_fnames: false
-        }
-      })
-    ],
-    usedExports: true,
-
-    // https://webpack.js.org/configuration/optimization/#optimization-runtimechunk
-    // https://webpack.js.org/guides/caching/#extracting-boilerplate
-    // runtimeChunk: 'single',
-
-    // code splitting
-    // https://webpack.js.org/plugins/split-chunks-plugin/#optimization-splitchunks
-    // https://webpack.js.org/guides/code-splitting/#prevent-duplication
-    // https://webpack.js.org/guides/code-splitting/#dynamic-imports
-    splitChunks: { chunks: 'all' }
+  entry: {
+    'card-ui': './src/card-ui.ts',
+    'input-form': './src/input-form.ts',
   },
 
+  // https://webpack.js.org/configuration/externals/
+  externals: {},
+
+  devtool: 'hidden-source-map',
+
+  // https://webpack.js.org/configuration/dev-server/
+  devServer: {
+    compress: true,
+    contentBase: path.join(__dirname, 'dist'),
+    // host: '0.0.0.0',
+    hot: true, // https://webpack.js.org/configuration/dev-server/#devserver-hot
+    inline: true,
+    port: 9001,
+    publicPath: '/', // https://webpack.js.org/configuration/dev-server/#devserver-publicpath-
+  },
+
+  plugins: [
+    new CleanWebpackPlugin(['dist']),
+
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].css',
+      chunkFilename: 'css/[id].[hash].css',
+    }),
+
+    new HtmlWebpackPlugin({
+      title: 'Development card-ui',
+      chunks: ['card-ui'],
+      filename: path.resolve(__dirname, './dist', 'card-ui.html'),
+      template: path.resolve(__dirname, './src/html', 'card-ui.html'),
+    }),
+
+    new HtmlWebpackPlugin({
+      title: 'Development input-form',
+      chunks: ['input-form'],
+      filename: path.resolve(__dirname, './dist', 'input-form.html'),
+      template: path.resolve(__dirname, './src/html', 'input-form.html'),
+    }),
+  ],
+
   output: {
-    filename: '[name].[contenthash].js',
-    chunkFilename: '[name].[contenthash].js',
-    path: path.resolve(__dirname, 'build')
-    // publicPath: ''
-  }
-});
+    filename: 'js/[name].[contenthash].js',
+    chunkFilename: 'js/[name].[contenthash].js',
+    path: path.resolve(__dirname, 'dist'),
+    // publicPath
+  },
+
+  optimization: {
+    minimize: false,
+    minimizer: [
+      // https://webpack.js.org/plugins/terser-webpack-plugin
+      new TerserWebpackPlugin({
+        cache: false,
+        parallel: true,
+        sourceMap: true,
+        terserOptions: {
+          warnings: true,
+          compress: {
+            dead_code: false,
+            drop_console: true,
+            drop_debugger: false,
+            unused: true,
+            warnings: true,
+          },
+          mangle: false,
+        },
+      }),
+    ],
+    usedExports: true,
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: [{ loader: 'ts-loader' }],
+        exclude: /node_modules/,
+      },
+
+      {
+        test: /\.(sa|sc|c)ss$/,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              hmr: process.env.NODE_ENV === 'development',
+            },
+          },
+
+          // Inject CSS into the DOM.
+          // https://webpack.js.org/loaders/style-loader/
+          // 'style-loader',
+
+          // The css-loader interprets @import and url() like import/require() and will resolve them.
+          // https://webpack.js.org/loaders/css-loader
+          'css-loader',
+
+          // Loads a Sass/SCSS file and compiles it to CSS.
+          // https://webpack.js.org/loaders/sass-loader/
+          'sass-loader',
+        ],
+      },
+
+      {
+        test: /\.(png|svg|jpg|jpeg|gif|ico)$/i,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'img/[name].[ext]?[contenthash]',
+              publicPath: '../', // Specifies a custom public path for the target file(s).
+            },
+          },
+        ],
+      },
+
+      {
+        test: /\.(svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              fallback: 'file-loader',
+              limit: 512, // url-loader can return a DataURL if the file is smaller than a byte limit.
+              // mimetype,
+
+              // file-loader fallback parameters
+              name: 'img/[name].[ext]?[contenthash]',
+              publicPath: '../', // Specifies a custom public path for the target file(s).
+            },
+          },
+        ],
+      },
+
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'font/[name].[ext]?[contenthash]',
+            },
+          },
+        ],
+      },
+    ],
+  },
+
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
+
+  target: 'web', // https://webpack.js.org/configuration/target/
+};

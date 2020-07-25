@@ -1,66 +1,165 @@
 const path = require('path');
-const webpack = require('webpack');
-const merge = require('webpack-merge');
-const common = require('./webpack.common');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserWebpackPlugin = require('terser-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-module.exports = merge(common, {
-  devtool: 'eval-source-map',
+module.exports = {
+  mode: 'development',
+
+  entry: {
+    'card-ui': './src/card-ui.ts',
+    'input-form': './src/input-form.ts',
+  },
+
+  // https://webpack.js.org/configuration/externals/
+  externals: {},
+
+  devtool: 'inline-source-map',
 
   // https://webpack.js.org/configuration/dev-server/
   devServer: {
     compress: true,
-    contentBase: __dirname, // path.join(__dirname, 'build'),
+    contentBase: path.join(__dirname, 'dist'),
     // host: '0.0.0.0',
     hot: true, // https://webpack.js.org/configuration/dev-server/#devserver-hot
     inline: true,
     port: 9001,
-    publicPath: '/' // https://webpack.js.org/configuration/dev-server/#devserver-publicpath-
+    publicPath: '/', // https://webpack.js.org/configuration/dev-server/#devserver-publicpath-
   },
 
-  mode: 'development', // 'development' or 'production'. $webpack --mode=development
-
   plugins: [
-    // https://webpack.js.org/guides/output-management/#cleaning-up-the-dist-folder
-    new CleanWebpackPlugin(['build']),
+    new CleanWebpackPlugin(['dist']),
 
-    // https://webpack.js.org/plugins/define-plugin/
-    new webpack.DefinePlugin({
-      // global constants in development mode
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].css',
+      chunkFilename: 'css/[id].[hash].css',
     }),
-    new webpack.HotModuleReplacementPlugin() // https://webpack.js.org/guides/hot-module-replacement/
+
+    new HtmlWebpackPlugin({
+      title: 'Development card-ui',
+      chunks: ['card-ui'],
+      filename: path.resolve(__dirname, './dist', 'card-ui.html'),
+      template: path.resolve(__dirname, './src/html', 'card-ui.html'),
+    }),
+
+    new HtmlWebpackPlugin({
+      title: 'Development input-form',
+      chunks: ['input-form'],
+      filename: path.resolve(__dirname, './dist', 'input-form.html'),
+      template: path.resolve(__dirname, './src/html', 'input-form.html'),
+    }),
   ],
+
+  output: {
+    filename: 'js/[name].bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+  },
 
   optimization: {
     minimize: false,
     minimizer: [
-      new UglifyJsPlugin({
+      // https://webpack.js.org/plugins/terser-webpack-plugin
+      new TerserWebpackPlugin({
+        cache: false,
         parallel: true,
         sourceMap: false,
-        uglifyOptions: {
-          warnings: false,
+        terserOptions: {
+          warnings: true,
           compress: {
-            unused: false,
+            dead_code: false,
             drop_console: false,
-            warnings: false
+            drop_debugger: false,
+            unused: false,
+            warnings: false,
           },
           mangle: false,
-          output: {
-            beautify: true,
-            comments: true
-          },
-          keep_fnames: true
-        }
-      })
+        },
+      }),
     ],
-    usedExports: false
+    usedExports: false,
   },
 
-  output: {
-    filename: '[name].js',
-    // chunkFilename: '[name].js',
-    path: path.resolve(__dirname, 'build')
-    // publicPath: ''
-  }
-});
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: [{ loader: 'ts-loader' }],
+        exclude: /node_modules/,
+      },
+
+      {
+        test: /\.(sa|sc|c)ss$/,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              hmr: process.env.NODE_ENV === 'development',
+            },
+          },
+
+          // Inject CSS into the DOM.
+          // https://webpack.js.org/loaders/style-loader/
+          // 'style-loader',
+
+          // The css-loader interprets @import and url() like import/require() and will resolve them.
+          // https://webpack.js.org/loaders/css-loader
+          'css-loader',
+
+          // Loads a Sass/SCSS file and compiles it to CSS.
+          // https://webpack.js.org/loaders/sass-loader/
+          'sass-loader',
+        ],
+      },
+
+      {
+        test: /\.(png|svg|jpg|jpeg|gif|ico)$/i,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'img/[name].[ext]?[contenthash]',
+              publicPath: '../', // Specifies a custom public path for the target file(s).
+            },
+          },
+        ],
+      },
+
+      {
+        test: /\.(svg)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              fallback: 'file-loader',
+              limit: 512, // url-loader can return a DataURL if the file is smaller than a byte limit.
+              // mimetype,
+
+              // file-loader fallback parameters
+              name: 'img/[name].[ext]?[contenthash]',
+              publicPath: '../', // Specifies a custom public path for the target file(s).
+            },
+          },
+        ],
+      },
+
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'font/[name].[ext]?[contenthash]',
+            },
+          },
+        ],
+      },
+    ],
+  },
+
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
+
+  target: 'web', // https://webpack.js.org/configuration/target/
+};

@@ -7,13 +7,13 @@
 
 
 ## NPM tasks
-* $npm run-script start:dev  
+* $npm run start:dev  
 after run, connect http://localhost:9001/
 
-* $npm run-script build:dev  
+* $npm run build:dev  
 build development js file (has console.log, comments)
 
-* $npm run-script build:prod  
+* $npm run build:prod  
 build production js file (uglified. no console.log, comments, unused modules.)
 
 

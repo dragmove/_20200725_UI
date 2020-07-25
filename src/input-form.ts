@@ -1,3 +1,4 @@
+import './img/favicon.ico';
 import './styles/input-form.scss';
 import { TextAreaWithSave } from './components/TextAreaWithSave';
 

@@ -1,3 +1,4 @@
+import './img/favicon.ico';
 import './styles/card-ui.scss';
 
 (() => {
